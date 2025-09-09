@@ -1,0 +1,182 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Validate version format
+      run: |
+        if [[ ! "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "Invalid version format. Use semantic versioning (e.g., 1.0.0)"
+          exit 1
+        fi
+        echo "Version format is valid: ${{ github.event.inputs.version }}"
+
+    - name: Create and push tag
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        
+        TAG="v${{ github.event.inputs.version }}"
+        
+        # Check if tag already exists
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "Tag $TAG already exists"
+          exit 1
+        fi
+        
+        git tag -a "$TAG" -m "Release version ${{ github.event.inputs.version }}"
+        git push origin "$TAG"
+        
+        echo "Created and pushed tag: $TAG"
+
+  build-and-release:
+    needs: create-release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows
+            ext: .exe
+            artifact: DotworkBootstraper.exe
+          - os: macos-latest
+            name: macos  
+            ext: ''
+            artifact: DotworkBootstraper
+          - os: ubuntu-latest
+            name: linux
+            ext: ''
+            artifact: DotworkBootstraper
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: v${{ github.event.inputs.version }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Update version in code
+      shell: bash
+      run: |
+        # Update version in main.py
+        sed -i.bak 's/setApplicationVersion(".*")/setApplicationVersion("${{ github.event.inputs.version }}")/' main.py
+        
+        # Update version in about dialog
+        if [ -f "gui/main_window.py" ]; then
+          sed -i.bak 's/v[0-9]\+\.[0-9]\+\.[0-9]\+/v${{ github.event.inputs.version }}/g' gui/main_window.py
+        fi
+        
+        echo "Updated version to ${{ github.event.inputs.version }}"
+
+    - name: Build executable
+      run: python build.py
+
+    - name: Create distribution package
+      shell: bash
+      run: |
+        mkdir -p release
+        cp -r dist/${{ matrix.artifact }} release/
+        cp -r templates release/
+        cp README.md release/
+        cp requirements.txt release/
+        
+        # Create version info file
+        echo "Dotwork Server Bootstraper v${{ github.event.inputs.version }}" > release/VERSION.txt
+        echo "Built on: $(date)" >> release/VERSION.txt
+        echo "Platform: ${{ matrix.name }}" >> release/VERSION.txt
+        
+        # Create launcher script for non-Windows
+        if [ "${{ matrix.os }}" != "windows-latest" ]; then
+          cat > release/run.sh << 'EOF'
+        #!/bin/bash
+        cd "$(dirname "$0")"
+        echo "Starting Dotwork Server Bootstraper v${{ github.event.inputs.version }}..."
+        ./DotworkBootstraper
+        EOF
+          chmod +x release/run.sh
+        fi
+
+    - name: Create Release Archive
+      shell: bash
+      run: |
+        cd release
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          7z a ../DotworkBootstraper-${{ matrix.name }}-v${{ github.event.inputs.version }}.zip *
+        else
+          tar -czf ../DotworkBootstraper-${{ matrix.name }}-v${{ github.event.inputs.version }}.tar.gz *
+        fi
+        cd ..
+
+    - name: Upload Release Assets
+      if: matrix.os == 'windows-latest'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.event.inputs.version }}
+        files: |
+          DotworkBootstraper-windows-v${{ github.event.inputs.version }}.zip
+          DotworkBootstraper-macos-v${{ github.event.inputs.version }}.tar.gz
+          DotworkBootstraper-linux-v${{ github.event.inputs.version }}.tar.gz
+        draft: false
+        prerelease: ${{ github.event.inputs.prerelease }}
+        generate_release_notes: true
+        body: |
+          ## Dotwork Server Bootstraper v${{ github.event.inputs.version }}
+          
+          ### 다운로드
+          - **Windows**: `DotworkBootstraper-windows-v${{ github.event.inputs.version }}.zip`
+          - **macOS**: `DotworkBootstraper-macos-v${{ github.event.inputs.version }}.tar.gz`
+          - **Linux**: `DotworkBootstraper-linux-v${{ github.event.inputs.version }}.tar.gz`
+          
+          ### 빠른 시작
+          
+          #### Windows
+          1. ZIP 파일 다운로드 및 압축 해제
+          2. `DotworkBootstraper.exe` 실행
+          
+          #### macOS/Linux  
+          1. tar.gz 파일 다운로드 및 압축 해제
+          2. `./run.sh` 실행 또는 `./DotworkBootstraper` 직접 실행
+          
+          ### 주요 기능
+          - 템플릿 기반 마인크래프트 서버 인스턴스 생성
+          - GUI를 통한 직관적인 변수 설정
+          - 인스턴스 업데이트 및 자동 백업
+          - 사용자 정의 템플릿/인스턴스 경로 설정
+          - 안전한 백업 및 복원 시스템
+          
+          ### 시스템 요구사항
+          - **Windows**: Windows 10 이상
+          - **macOS**: macOS 10.14 (Mojave) 이상
+          - **Linux**: Ubuntu 18.04 이상 또는 동등한 배포판
+          
+          ### 사용법
+          자세한 사용법은 [README.md](https://github.com/${{ github.repository }}/blob/main/README.md)를 참조하세요.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

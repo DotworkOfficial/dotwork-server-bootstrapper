@@ -1,0 +1,180 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Triggers on version tags like v1.0.0
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows
+            ext: .exe
+            artifact: DotworkBootstraper.exe
+          # - os: macos-latest  
+          #   name: macos
+          #   ext: ''
+          #   artifact: DotworkBootstraper
+          # - os: ubuntu-latest
+          #   name: linux
+          #   ext: ''
+          #   artifact: DotworkBootstraper
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Create example config (for build)
+      run: |
+        echo "templates_dir: templates" > config.yml
+        echo "instances_dir: instances" >> config.yml
+        echo "default_output_dir: instances" >> config.yml
+        echo "auto_backup: true" >> config.yml
+        echo "backup_dir: backups" >> config.yml
+        echo "max_backups: 5" >> config.yml
+        echo "log_level: INFO" >> config.yml
+
+    - name: Build executable
+      run: python build.py
+
+    - name: Test executable exists
+      shell: bash
+      run: |
+        if [ -f "dist/${{ matrix.artifact }}" ]; then
+          echo "Executable built successfully"
+          ls -la dist/
+        else
+          echo "Executable not found"
+          ls -la dist/ || echo "dist directory not found"
+          exit 1
+        fi
+
+    - name: Create distribution package
+      shell: bash
+      run: |
+        mkdir -p release
+        cp -r dist/${{ matrix.artifact }} release/
+        cp -r templates release/
+        cp README.md release/
+        cp requirements.txt release/
+        
+        # Create a simple launcher script for non-Windows
+        if [ "${{ matrix.os }}" != "windows-latest" ]; then
+          echo '#!/bin/bash' > release/run.sh
+          echo 'cd "$(dirname "$0")"' >> release/run.sh
+          echo './DotworkBootstraper' >> release/run.sh
+          chmod +x release/run.sh
+        fi
+
+    - name: Archive production artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: DotworkBootstraper-${{ matrix.name }}
+        path: release/
+        retention-days: 30
+
+    - name: Create Release Archive
+      if: startsWith(github.ref, 'refs/tags/v')
+      shell: bash
+      run: |
+        cd release
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          7z a ../DotworkBootstraper-${{ matrix.name }}.zip *
+        else
+          tar -czf ../DotworkBootstraper-${{ matrix.name }}.tar.gz *
+        fi
+        cd ..
+
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          DotworkBootstraper-windows.zip
+          DotworkBootstraper-macos.tar.gz  
+          DotworkBootstraper-linux.tar.gz
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+        body: |
+          ## Dotwork Server Bootstraper Release
+          
+          ### 다운로드
+          - **Windows**: `DotworkBootstraper-windows.zip`
+          - **macOS**: `DotworkBootstraper-macos.tar.gz`
+          - **Linux**: `DotworkBootstraper-linux.tar.gz`
+          
+          ### 설치 방법
+          1. 해당 OS용 파일 다운로드
+          2. 압축 해제
+          3. `DotworkBootstraper.exe` 실행 (Windows)
+          
+          ### 주요 기능
+          - 템플릿 기반 마인크래프트 서버 인스턴스 생성
+          - GUI를 통한 변수 설정 및 관리
+          - 인스턴스 업데이트 및 백업 기능
+          - 사용자 정의 템플릿 경로 설정
+          
+          ### 요구사항
+          - Windows 10 이상 (Windows 버전)
+          - macOS 10.14 이상 (macOS 버전)  
+          - Ubuntu 18.04 이상 (Linux 버전)
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    runs-on: windows-latest
+    needs: build
+    
+    steps:
+    - name: Download Windows artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: DotworkBootstraper-windows
+        path: test-artifacts
+
+    - name: Test executable
+      shell: cmd
+      run: |
+        cd test-artifacts
+        echo Testing executable...
+        dir
+        echo Executable test completed (basic file check)
+        
+    - name: Validate templates
+      shell: bash
+      run: |
+        cd test-artifacts
+        if [ -d "templates" ]; then
+          echo "Templates directory found"
+          echo "Template contents:"
+          find templates -name "*.yml" -o -name "*.yaml" | head -10
+        else
+          echo "Templates directory missing"
+          exit 1
+        fi

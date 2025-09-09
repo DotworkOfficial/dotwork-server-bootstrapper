@@ -1,0 +1,18 @@
+# Database configuration
+database:
+  host: "{{ db_host }}"
+  port: {{ db_port }}
+  database: "{{ db_name }}"
+  username: "minecraft"
+  password: "password123"
+  
+connection:
+  pool_size: 10
+  timeout: 5000
+  
+tables:
+  prefix: "mc_"
+  
+logging:
+  enabled: true
+  level: "INFO"

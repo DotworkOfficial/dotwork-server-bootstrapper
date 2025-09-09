@@ -1,0 +1,46 @@
+name: "Main Server"
+description: "메인 마인크래프트 서버 템플릿"
+version: "1.0.0"
+
+variables:
+  - name: "server_name"
+    type: "string"
+    description: "서버 이름"
+    required: true
+    default_value: "MainServer"
+  
+  - name: "server_port"
+    type: "port"
+    description: "서버 포트 번호"
+    required: true
+    default_value: 25565
+  
+  - name: "max_players"
+    type: "int"
+    description: "최대 플레이어 수"
+    required: true
+    default_value: 20
+  
+  - name: "db_host"
+    type: "string"
+    description: "데이터베이스 호스트"
+    required: true
+    default_value: "localhost"
+  
+  - name: "db_port"
+    type: "port"
+    description: "데이터베이스 포트"
+    required: true
+    default_value: 3306
+  
+  - name: "db_name"
+    type: "string"
+    description: "데이터베이스 이름"
+    required: true
+    default_value: "minecraft_main"
+  
+  - name: "enable_whitelist"
+    type: "boolean"
+    description: "화이트리스트 활성화"
+    required: false
+    default_value: false
