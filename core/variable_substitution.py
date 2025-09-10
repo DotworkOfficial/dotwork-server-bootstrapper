@@ -11,32 +11,37 @@ class VariableSubstitution:
             loader=FileSystemLoader('.'),
             autoescape=False
         )
+
+        self.text_extensions = {
+            '.txt', '.yml', '.yaml', '.json', '.properties', '.conf', '.cfg', 
+            '.sh', '.bat', '.cmd', '.ps1', '.xml', '.html', '.css', '.js', 
+            '.py', '.java', '.cpp', '.c', '.h', '.md', '.ini', '.toml'
+        }
     
     def process_file(self, source_path: str, dest_path: str, variables: Dict[str, Any]):
-        try:
-            # Try to read as text file for variable substitution
-            with open(source_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            # Check if file contains placeholders
-            if self.placeholder_pattern.search(content):
-                # Process with Jinja2 for more advanced templating
-                template = self.jinja_env.from_string(content)
-                processed_content = template.render(**variables)
+        file_ext = os.path.splitext(source_path)[1].lower()
+        
+        if file_ext in self.text_extensions:
+            try:
+                with open(source_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
                 
-                with open(dest_path, 'w', encoding='utf-8') as f:
-                    f.write(processed_content)
-            else:
-                # No placeholders, just copy the file
-                with open(dest_path, 'w', encoding='utf-8') as f:
-                    f.write(content)
+                if self.placeholder_pattern.search(content):
+                    template = self.jinja_env.from_string(content)
+                    processed_content = template.render(**variables)
                     
-        except UnicodeDecodeError:
-            # Binary file, just copy it
-            shutil.copy2(source_path, dest_path)
-        except Exception as e:
-            # Fallback to simple copy
-            print(f"Warning: Could not process {source_path}: {e}")
+                    with open(dest_path, 'w', encoding='utf-8') as f:
+                        f.write(processed_content)
+                else:
+                    with open(dest_path, 'w', encoding='utf-8') as f:
+                        f.write(content)
+                        
+            except UnicodeDecodeError:
+                shutil.copy2(source_path, dest_path)
+            except Exception as e:
+                print(f"Warning: Could not process {source_path}: {e}")
+                shutil.copy2(source_path, dest_path)
+        else:
             shutil.copy2(source_path, dest_path)
     
     def find_placeholders_in_file(self, file_path: str) -> list:
