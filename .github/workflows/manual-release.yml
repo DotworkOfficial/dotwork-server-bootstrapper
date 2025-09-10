@@ -56,15 +56,15 @@ jobs:
           - os: windows-latest
             name: windows
             ext: .exe
-            artifact: DotworkBootstraper.exe
+            artifact: DotworkBootstrapper.exe
           - os: macos-latest
             name: macos  
             ext: ''
-            artifact: DotworkBootstraper
+            artifact: DotworkBootstrapper
           - os: ubuntu-latest
             name: linux
             ext: ''
-            artifact: DotworkBootstraper
+            artifact: DotworkBootstrapper
 
     steps:
     - name: Checkout code
@@ -108,7 +108,7 @@ jobs:
         cp requirements.txt release/
         
         # Create version info file
-        echo "Dotwork Server Bootstraper v${{ github.event.inputs.version }}" > release/VERSION.txt
+        echo "Dotwork Server Bootstrapper v${{ github.event.inputs.version }}" > release/VERSION.txt
         echo "Built on: $(date)" >> release/VERSION.txt
         echo "Platform: ${{ matrix.name }}" >> release/VERSION.txt
         
@@ -117,8 +117,8 @@ jobs:
           cat > release/run.sh << 'EOF'
         #!/bin/bash
         cd "$(dirname "$0")"
-        echo "Starting Dotwork Server Bootstraper v${{ github.event.inputs.version }}..."
-        ./DotworkBootstraper
+        echo "Starting Dotwork Server Bootstrapper v${{ github.event.inputs.version }}..."
+        ./DotworkBootstrapper
         EOF
           chmod +x release/run.sh
         fi
@@ -128,9 +128,9 @@ jobs:
       run: |
         cd release
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          7z a ../DotworkBootstraper-${{ matrix.name }}-v${{ github.event.inputs.version }}.zip *
+          7z a ../DotworkBootstrapper-${{ matrix.name }}-v${{ github.event.inputs.version }}.zip *
         else
-          tar -czf ../DotworkBootstraper-${{ matrix.name }}-v${{ github.event.inputs.version }}.tar.gz *
+          tar -czf ../DotworkBootstrapper-${{ matrix.name }}-v${{ github.event.inputs.version }}.tar.gz *
         fi
         cd ..
 
@@ -140,29 +140,29 @@ jobs:
       with:
         tag_name: v${{ github.event.inputs.version }}
         files: |
-          DotworkBootstraper-windows-v${{ github.event.inputs.version }}.zip
-          DotworkBootstraper-macos-v${{ github.event.inputs.version }}.tar.gz
-          DotworkBootstraper-linux-v${{ github.event.inputs.version }}.tar.gz
+          DotworkBootstrapper-windows-v${{ github.event.inputs.version }}.zip
+          DotworkBootstrapper-macos-v${{ github.event.inputs.version }}.tar.gz
+          DotworkBootstrapper-linux-v${{ github.event.inputs.version }}.tar.gz
         draft: false
         prerelease: ${{ github.event.inputs.prerelease }}
         generate_release_notes: true
         body: |
-          ## Dotwork Server Bootstraper v${{ github.event.inputs.version }}
+          ## Dotwork Server Bootstrapper v${{ github.event.inputs.version }}
           
           ### 다운로드
-          - **Windows**: `DotworkBootstraper-windows-v${{ github.event.inputs.version }}.zip`
-          - **macOS**: `DotworkBootstraper-macos-v${{ github.event.inputs.version }}.tar.gz`
-          - **Linux**: `DotworkBootstraper-linux-v${{ github.event.inputs.version }}.tar.gz`
+          - **Windows**: `DotworkBootstrapper-windows-v${{ github.event.inputs.version }}.zip`
+          - **macOS**: `DotworkBootstrapper-macos-v${{ github.event.inputs.version }}.tar.gz`
+          - **Linux**: `DotworkBootstrapper-linux-v${{ github.event.inputs.version }}.tar.gz`
           
           ### 빠른 시작
           
           #### Windows
           1. ZIP 파일 다운로드 및 압축 해제
-          2. `DotworkBootstraper.exe` 실행
+          2. `DotworkBootstrapper.exe` 실행
           
           #### macOS/Linux  
           1. tar.gz 파일 다운로드 및 압축 해제
-          2. `./run.sh` 실행 또는 `./DotworkBootstraper` 직접 실행
+          2. `./run.sh` 실행 또는 `./DotworkBootstrapper` 직접 실행
           
           ### 주요 기능
           - 템플릿 기반 마인크래프트 서버 인스턴스 생성

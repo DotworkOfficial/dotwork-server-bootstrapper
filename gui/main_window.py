@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
         self.load_templates()
     
     def init_ui(self):
-        self.setWindowTitle("Dotwork Server Bootstraper")
+        self.setWindowTitle("Dotwork Server Bootstrapper")
         self.setGeometry(100, 100, 1200, 800)
         
         # Central widget
@@ -207,5 +207,5 @@ class MainWindow(QMainWindow):
     
     def show_about(self):
         QMessageBox.about(self, "정보", 
-                         "Dotwork Server Bootstraper v1.0.0\n\n"
+                         "Dotwork Server Bootstrapper v1.0.0\n\n"
                          "마인크래프트 서버 인스턴스를 쉽게 생성하고 관리할 수 있는 도구입니다.")

@@ -26,7 +26,7 @@ def build_exe():
         "pyinstaller",
         "--onefile",                    # Single executable file
         "--windowed",                   # No console window (GUI app)
-        "--name=DotworkBootstraper",    # Executable name
+        "--name=DotworkBootstrapper",    # Executable name
         "--icon=icon.ico",              # Icon (if exists)
         f"--add-data=templates{separator}templates",  # Include templates folder
         "--hidden-import=PyQt5.sip",    # Include hidden imports
@@ -45,7 +45,7 @@ def build_exe():
     try:
         subprocess.check_call(cmd)
         print("\nBuild successful!")
-        print("Executable location: dist/DotworkBootstraper.exe")
+        print("Executable location: dist/DotworkBootstrapper.exe")
         
         # Copy templates to dist folder
         dist_templates = "dist/templates"

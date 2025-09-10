@@ -8,7 +8,7 @@ def main():
     app = QApplication(sys.argv)
     
     # Set application properties
-    app.setApplicationName("Dotwork Server Bootstraper")
+    app.setApplicationName("Dotwork Server Bootstrapper")
     app.setApplicationVersion("1.0.0")
     app.setOrganizationName("Dotwork")
     

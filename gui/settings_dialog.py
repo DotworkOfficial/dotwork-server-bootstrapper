@@ -174,7 +174,7 @@ class SettingsDialog(QDialog):
         about_text.setReadOnly(True)
         about_text.setMaximumHeight(100)
         about_text.setText(
-            "Dotwork Server Bootstraper v1.0.0\n\n"
+            "Dotwork Server Bootstrapper v1.0.0\n\n"
             "마인크래프트 서버 인스턴스를 쉽게 생성하고 관리할 수 있는 도구입니다.\n"
             "템플릿 기반으로 서버 설정을 자동화하여 인프라 지식 없이도 "
             "서버를 구성할 수 있습니다."

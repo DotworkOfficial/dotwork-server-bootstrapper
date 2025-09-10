@@ -13,7 +13,7 @@ class Logger:
     
     def __init__(self):
         if not hasattr(self, 'initialized'):
-            self.logger = logging.getLogger('DotworkBootstraper')
+            self.logger = logging.getLogger('DotworkBootstrapper')
             self.setup_logger()
             self.initialized = True
     

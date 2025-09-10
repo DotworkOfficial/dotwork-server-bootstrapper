@@ -17,15 +17,15 @@ jobs:
           - os: windows-latest
             name: windows
             ext: .exe
-            artifact: DotworkBootstraper.exe
+            artifact: DotworkBootstrapper.exe
           # - os: macos-latest  
           #   name: macos
           #   ext: ''
-          #   artifact: DotworkBootstraper
+          #   artifact: DotworkBootstrapper
           # - os: ubuntu-latest
           #   name: linux
           #   ext: ''
-          #   artifact: DotworkBootstraper
+          #   artifact: DotworkBootstrapper
 
     steps:
     - name: Checkout code
@@ -87,14 +87,14 @@ jobs:
         if [ "${{ matrix.os }}" != "windows-latest" ]; then
           echo '#!/bin/bash' > release/run.sh
           echo 'cd "$(dirname "$0")"' >> release/run.sh
-          echo './DotworkBootstraper' >> release/run.sh
+          echo './DotworkBootstrapper' >> release/run.sh
           chmod +x release/run.sh
         fi
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: DotworkBootstraper-${{ matrix.name }}
+        name: DotworkBootstrapper-${{ matrix.name }}
         path: release/
         retention-days: 30
 
@@ -104,9 +104,9 @@ jobs:
       run: |
         cd release
         if [ "${{ matrix.os }}" == "windows-latest" ]; then
-          7z a ../DotworkBootstraper-${{ matrix.name }}.zip *
+          7z a ../DotworkBootstrapper-${{ matrix.name }}.zip *
         else
-          tar -czf ../DotworkBootstraper-${{ matrix.name }}.tar.gz *
+          tar -czf ../DotworkBootstrapper-${{ matrix.name }}.tar.gz *
         fi
         cd ..
 
@@ -115,24 +115,24 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          DotworkBootstraper-windows.zip
-          DotworkBootstraper-macos.tar.gz  
-          DotworkBootstraper-linux.tar.gz
+          DotworkBootstrapper-windows.zip
+          DotworkBootstrapper-macos.tar.gz  
+          DotworkBootstrapper-linux.tar.gz
         draft: false
         prerelease: false
         generate_release_notes: true
         body: |
-          ## Dotwork Server Bootstraper Release
+          ## Dotwork Server Bootstrapper Release
           
           ### 다운로드
-          - **Windows**: `DotworkBootstraper-windows.zip`
-          - **macOS**: `DotworkBootstraper-macos.tar.gz`
-          - **Linux**: `DotworkBootstraper-linux.tar.gz`
+          - **Windows**: `DotworkBootstrapper-windows.zip`
+          - **macOS**: `DotworkBootstrapper-macos.tar.gz`
+          - **Linux**: `DotworkBootstrapper-linux.tar.gz`
           
           ### 설치 방법
           1. 해당 OS용 파일 다운로드
           2. 압축 해제
-          3. `DotworkBootstraper.exe` 실행 (Windows)
+          3. `DotworkBootstrapper.exe` 실행 (Windows)
           
           ### 주요 기능
           - 템플릿 기반 마인크래프트 서버 인스턴스 생성

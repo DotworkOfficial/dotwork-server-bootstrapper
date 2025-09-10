@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Development runner script for Dotwork Server Bootstraper
+Development runner script for Dotwork Server Bootstrapper
 """
 import sys
 import os
