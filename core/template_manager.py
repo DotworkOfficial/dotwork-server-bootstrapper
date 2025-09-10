@@ -1,5 +1,6 @@
 import os
 import shutil
+from datetime import datetime
 from typing import List, Dict, Any
 from models.template import Template
 from models.instance import ServerInstance
@@ -126,7 +127,7 @@ class TemplateManager:
         self._copy_template_files(template, instance.path, instance.variables)
         
         # Update instance metadata
-        instance.updated_at = ServerInstance().updated_at
+        instance.updated_at = datetime.now()
         instance.save_metadata()
     
     def validate_variables(self, template: Template, variables: Dict[str, Any]) -> List[str]:

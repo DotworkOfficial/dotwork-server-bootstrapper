@@ -35,6 +35,11 @@ class InstanceManagerWidget(QGroupBox):
         self.open_folder_btn.clicked.connect(self.open_instances_folder)
         toolbar_layout.addWidget(self.open_folder_btn)
         
+        self.bulk_update_btn = QPushButton("모든 인스턴스 업데이트")
+        self.bulk_update_btn.clicked.connect(self.bulk_update_instances)
+        self.bulk_update_btn.setEnabled(False)  # Initially disabled
+        toolbar_layout.addWidget(self.bulk_update_btn)
+        
         toolbar_layout.addStretch()
         layout.addLayout(toolbar_layout)
         
@@ -101,6 +106,8 @@ class InstanceManagerWidget(QGroupBox):
         
         self.instances = found_instances
         self.populate_table()
+        
+        self.bulk_update_btn.setEnabled(len(self.instances) > 0)
         
         if self.instances:
             self.info_label.setText(
@@ -238,3 +245,90 @@ class InstanceManagerWidget(QGroupBox):
                 QMessageBox.information(self, "완료", "인스턴스가 삭제되었습니다.")
             except Exception as e:
                 QMessageBox.critical(self, "오류", f"인스턴스 삭제 중 오류가 발생했습니다:\n{str(e)}")
+    
+    def bulk_update_instances(self):
+        if not self.instances:
+            QMessageBox.information(self, "알림", "업데이트할 인스턴스가 없습니다.")
+            return
+        
+        # Group instances by template name
+        template_groups = {}
+        for instance in self.instances:
+            template_name = instance.template_name
+            if template_name not in template_groups:
+                template_groups[template_name] = []
+            template_groups[template_name].append(instance)
+        
+        # Show confirmation dialog with details
+        message = f"총 {len(self.instances)}개의 인스턴스를 템플릿으로 업데이트하시겠습니까?\n\n"
+        message += "템플릿별 인스턴스 개수:\n"
+        for template_name, instances in template_groups.items():
+            message += f"  • {template_name}: {len(instances)}개\n"
+        message += "\n모든 인스턴스의 기존 파일들이 덮어쓰여집니다."
+        
+        reply = QMessageBox.question(
+            self, "일괄 업데이트 확인", message,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply != QMessageBox.Yes:
+            return
+        
+        # Perform bulk update
+        updated_count = 0
+        failed_count = 0
+        failed_instances = []
+        
+        from PyQt5.QtWidgets import QProgressDialog
+        from PyQt5.QtCore import Qt
+        
+        # Show progress dialog
+        progress = QProgressDialog("인스턴스 업데이트 중...", "취소", 0, len(self.instances), self)
+        progress.setWindowTitle("일괄 업데이트")
+        progress.setWindowModality(Qt.WindowModal)
+        progress.show()
+        
+        for i, instance in enumerate(self.instances):
+            if progress.wasCanceled():
+                break
+                
+            progress.setLabelText(f"업데이트 중: {instance.name}")
+            progress.setValue(i)
+            
+            try:
+                self.template_manager.update_instance_from_template(instance)
+                updated_count += 1
+            except Exception as e:
+                failed_count += 1
+                failed_instances.append(f"{instance.name}: {str(e)}")
+            
+            # Process events to keep UI responsive
+            from PyQt5.QtWidgets import QApplication
+            QApplication.processEvents()
+        
+        progress.setValue(len(self.instances))
+        progress.close()
+        
+        # Refresh instances list
+        self.refresh_instances()
+        
+        # Show results
+        if failed_count == 0:
+            QMessageBox.information(
+                self, "완료", 
+                f"모든 인스턴스가 성공적으로 업데이트되었습니다.\n\n"
+                f"업데이트된 인스턴스: {updated_count}개"
+            )
+        else:
+            error_details = "\n".join(failed_instances[:5])  # Show first 5 errors
+            if len(failed_instances) > 5:
+                error_details += f"\n... 및 {len(failed_instances) - 5}개 더"
+            
+            QMessageBox.warning(
+                self, "일부 실패",
+                f"일괄 업데이트가 완료되었습니다.\n\n"
+                f"성공: {updated_count}개\n"
+                f"실패: {failed_count}개\n\n"
+                f"실패한 인스턴스:\n{error_details}"
+            )
