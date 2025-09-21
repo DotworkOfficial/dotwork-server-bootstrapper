@@ -7,12 +7,10 @@ from gui.main_window import MainWindow
 def main():
     app = QApplication(sys.argv)
     
-    # Set application properties
     app.setApplicationName("Dotwork Server Bootstrapper")
     app.setApplicationVersion("1.0.0")
     app.setOrganizationName("Dotwork")
     
-    # Create and show main window
     window = MainWindow()
     window.show()
     

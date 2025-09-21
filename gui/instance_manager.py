@@ -1,11 +1,15 @@
-from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton, 
+from typing import List
+
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
                              QTableWidget, QTableWidgetItem, QLabel, QGroupBox,
                              QHeaderView, QMessageBox, QMenu, QFileDialog)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QContextMenuEvent
 
+from gui.result_widget import FileResultWindow
 from models.instance import ServerInstance
 from core.template_manager import TemplateManager
+from models.result import FileResult
 from utils.config import ConfigManager
 import os
 import subprocess
@@ -171,7 +175,10 @@ class InstanceManagerWidget(QGroupBox):
         
         update_action = menu.addAction("템플릿으로 업데이트")
         update_action.triggered.connect(lambda: self.update_instance(instance))
-        
+
+        dry_update_action = menu.addAction("Dry run")
+        dry_update_action.triggered.connect(lambda: self.update_instance(instance, dry_run=True))
+
         menu.addSeparator()
         
         delete_action = menu.addAction("삭제")
@@ -209,7 +216,7 @@ class InstanceManagerWidget(QGroupBox):
         except Exception as e:
             QMessageBox.warning(self, "오류", f"폴더를 열 수 없습니다:\n{str(e)}")
     
-    def update_instance(self, instance: ServerInstance):
+    def update_instance(self, instance: ServerInstance, dry_run: bool = False):
         try:
             reply = QMessageBox.question(
                 self, "확인",
@@ -220,10 +227,10 @@ class InstanceManagerWidget(QGroupBox):
             )
             
             if reply == QMessageBox.Yes:
-                self.template_manager.update_instance_from_template(instance)
+                result = self.template_manager.update_instance_from_template(instance, dry_run)
                 self.refresh_instances()
-                QMessageBox.information(self, "완료", "인스턴스가 성공적으로 업데이트되었습니다.")
-                
+                FileResultWindow(result.processed_files).exec_()
+
         except Exception as e:
             QMessageBox.critical(self, "오류", f"인스턴스 업데이트 중 오류가 발생했습니다:\n{str(e)}")
     
@@ -288,7 +295,8 @@ class InstanceManagerWidget(QGroupBox):
         progress.setWindowTitle("일괄 업데이트")
         progress.setWindowModality(Qt.WindowModal)
         progress.show()
-        
+
+        file_results: List[FileResult] = []
         for i, instance in enumerate(self.instances):
             if progress.wasCanceled():
                 break
@@ -297,7 +305,8 @@ class InstanceManagerWidget(QGroupBox):
             progress.setValue(i)
             
             try:
-                self.template_manager.update_instance_from_template(instance)
+                result = self.template_manager.update_instance_from_template(instance)
+                file_results.extend(result.processed_files)
                 updated_count += 1
             except Exception as e:
                 failed_count += 1
@@ -332,3 +341,5 @@ class InstanceManagerWidget(QGroupBox):
                 f"실패: {failed_count}개\n\n"
                 f"실패한 인스턴스:\n{error_details}"
             )
+
+        FileResultWindow(file_results).exec_()
